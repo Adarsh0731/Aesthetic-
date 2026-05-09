@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, BookOpen, GraduationCap, Users, ThumbsUp, ChevronRight, PlayCircle, Star, ShieldCheck, Briefcase, Code2, Server, Cloud, Cpu, Terminal } from 'lucide-react';
+import { Menu, X, BookOpen, GraduationCap, Users, ThumbsUp, ChevronRight, PlayCircle, Star, ShieldCheck, Briefcase, Code2, Server, Cloud, Cpu, Terminal, Search } from 'lucide-react';
 
 const GridOverlay = () => (
   <div className="grid-overlay px-6 lg:px-12">
@@ -147,7 +147,7 @@ const Stats = () => {
   );
 };
 
-const CourseCard: React.FC<{ course: any }> = ({ course }) => (
+const CourseCard: React.FC<{ course: any; onFeedback: (title: string) => void }> = ({ course, onFeedback }) => (
   <motion.div 
     whileHover={{ y: -5 }}
     className="bg-brand-card border border-border-subtle flex flex-col group h-full transition-all hover:shadow-2xl hover:shadow-brand-accent/5"
@@ -157,15 +157,29 @@ const CourseCard: React.FC<{ course: any }> = ({ course }) => (
       <div className="absolute top-0 right-0 px-3 py-1 bg-brand-accent text-white font-mono text-[9px] uppercase tracking-widest">
         {course.category}
       </div>
+      {course.completed && (
+        <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md p-2 border border-brand-accent/20 flex items-center gap-2 shadow-lg">
+          <ShieldCheck size={14} className="text-brand-accent" />
+          <span className="text-[8px] font-black uppercase tracking-widest text-brand-text">Completed</span>
+        </div>
+      )}
     </div>
     <div className="p-8 flex-1 flex flex-col">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="font-mono text-xs text-brand-accent">{course.rating}</span>
-        <div className="flex gap-0.5">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className={`w-1 h-1 ${i < Math.floor(course.rating) ? "bg-brand-accent" : "bg-brand-muted/20"}`} />
-          ))}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-brand-accent">{course.rating}</span>
+          <div className="flex gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className={`w-1 h-1 ${i < Math.floor(course.rating) ? "bg-brand-accent" : "bg-brand-muted/20"}`} />
+            ))}
+          </div>
         </div>
+        <button 
+          onClick={() => onFeedback(course.title)}
+          className="text-[8px] font-bold uppercase tracking-widest text-brand-accent/40 hover:text-brand-accent transition-colors"
+        >
+          Leave Feedback
+        </button>
       </div>
       <h3 className="font-display text-xl font-bold mb-4 uppercase tracking-tight text-brand-text group-hover:text-brand-accent transition-colors">{course.title}</h3>
       <div className="mt-auto pt-6 flex items-center justify-between border-t border-border-subtle">
@@ -178,10 +192,64 @@ const CourseCard: React.FC<{ course: any }> = ({ course }) => (
   </motion.div>
 );
 
+const FeedbackModal = ({ isOpen, onClose, courseTitle }: { isOpen: boolean; onClose: () => void; courseTitle: string }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-bg/80 backdrop-blur-md">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="w-full max-w-lg bg-white border border-border-subtle p-12 relative"
+      >
+        <button onClick={onClose} className="absolute top-8 right-8 text-brand-muted hover:text-brand-text transition-colors">
+          <X size={20} />
+        </button>
+        
+        <div className="label-mono">Course Feedback</div>
+        <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-text mb-2">{courseTitle}</h3>
+        <p className="text-brand-muted text-sm font-light mb-8">Share your technical insights and experience with this module.</p>
+        
+        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); onClose(); }}>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-brand-text mb-3">Rating</label>
+            <div className="flex gap-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} type="button" className="text-brand-muted hover:text-brand-accent transition-colors">
+                  <Star size={20} />
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-brand-text mb-3">Your Intel</label>
+            <textarea 
+              rows={4}
+              placeholder="PROVIDE ARCHITECTURAL FEEDBACK..."
+              className="w-full bg-brand-bg/5 border border-border-subtle p-4 text-[11px] font-medium uppercase tracking-widest focus:outline-none focus:border-brand-accent transition-colors"
+            />
+          </div>
+          
+          <button type="submit" className="w-full bg-brand-text text-white py-4 font-black uppercase text-[10px] tracking-[0.4em] hover:bg-brand-accent transition-all">
+            SUBMIT FEEDBACK
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 const SkillCard: React.FC<{ skill: any }> = ({ skill }) => (
   <motion.div 
-    whileHover={{ backgroundColor: "rgba(79, 70, 229, 0.02)" }}
-    className="p-10 border border-border-subtle group relative overflow-hidden flex flex-col h-full"
+    whileHover={{ 
+      y: -8,
+      backgroundColor: "rgba(79, 70, 229, 0.04)",
+      boxShadow: "0 20px 40px rgba(79, 70, 229, 0.1)"
+    }}
+    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+    className="p-10 border border-border-subtle group relative overflow-hidden flex flex-col h-full bg-white"
   >
     <div className="flex items-start justify-between mb-8 relative z-10">
       <div className="p-4 border border-brand-accent/20 text-brand-accent group-hover:bg-brand-accent group-hover:text-white transition-all duration-500">
@@ -207,9 +275,12 @@ const SkillCard: React.FC<{ skill: any }> = ({ skill }) => (
         ))}
       </div>
       
-      <button className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.3em] text-brand-muted hover:text-brand-accent transition-colors mt-auto">
+      <motion.button 
+        whileTap={{ scale: 0.9, x: 5 }}
+        className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.3em] text-brand-muted hover:text-brand-accent transition-colors mt-auto w-fit"
+      >
         LEARN MORE <ChevronRight size={14} />
-      </button>
+      </motion.button>
     </div>
 
     {/* Architectural Accent */}
@@ -218,7 +289,11 @@ const SkillCard: React.FC<{ skill: any }> = ({ skill }) => (
 );
 
 const Courses = () => {
-  const categories = ["All", "Software Testing", "Development", "Data Intelligence"];
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const categories = ["All", "Software Testing", "Development", "Intelligence"];
   const courses = [
     {
       title: "Manual & Automation Testing",
@@ -226,7 +301,8 @@ const Courses = () => {
       image: "https://images.unsplash.com/photo-1516116216624-53e697fedbea?auto=format&fit=crop&q=80&w=600",
       price: "$499",
       rating: 4.8,
-      students: "2.4k"
+      students: "2.4k",
+      completed: true
     },
     {
       title: "Full Stack Development",
@@ -234,7 +310,8 @@ const Courses = () => {
       image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=600",
       price: "$599",
       rating: 4.9,
-      students: "3.1k"
+      students: "3.1k",
+      completed: false
     },
     {
       title: "Data Analytics Bootcamp",
@@ -242,9 +319,17 @@ const Courses = () => {
       image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=600",
       price: "$699",
       rating: 4.7,
-      students: "1.8k"
+      students: "1.8k",
+      completed: true
     }
   ];
+
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          course.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = activeCategory === "All" || course.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <section id="courses" className="py-32 px-6 lg:px-12 relative border-b border-border-subtle bg-brand-card">
@@ -256,14 +341,32 @@ const Courses = () => {
             <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-brand-text mb-8 italic-serif-parent">
               PREMIUM <br/><span className="text-brand-accent">ACADEMY</span> <span className="serif-italic lowercase tracking-tight opacity-50 ml-4 font-light text-brand-muted">modules.</span>
             </h2>
-            <p className="text-brand-muted max-w-lg font-light leading-relaxed text-lg">
-              Designed for the modern architect. Curated by global leads to bridge the critical gap between theory and high-stakes practice.
-            </p>
+            <div className="flex flex-col md:flex-row gap-8 items-start md:items-end w-full">
+              <div className="flex-1 w-full max-w-md">
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted/40 group-focus-within:text-brand-accent transition-colors" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="SEARCH MODULES..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-brand-bg/50 border border-border-subtle p-5 pl-12 text-[10px] font-bold uppercase tracking-[0.3em] text-brand-text placeholder:text-brand-muted/30 focus:outline-none focus:border-brand-accent transition-all"
+                  />
+                </div>
+              </div>
+              <p className="text-brand-muted max-w-xs font-light leading-relaxed text-sm">
+                Curated by global leads to bridge the critical gap between theory and high-stakes practice.
+              </p>
+            </div>
           </div>
           <div className="col-span-12 lg:col-span-4 flex flex-col justify-end p-6 lg:p-12">
             <div className="flex flex-col gap-6 text-[9px] uppercase font-bold tracking-[0.4em] text-brand-muted/40">
               {categories.map((cat, i) => (
-                <button key={i} className={`text-left hover:text-brand-text transition-all hover:translate-x-2 ${i === 0 ? 'text-brand-accent' : ''}`}>
+                <button 
+                  key={i} 
+                  onClick={() => setActiveCategory(cat)}
+                  className={`text-left hover:text-brand-text transition-all hover:translate-x-2 ${activeCategory === cat ? 'text-brand-accent translate-x-2 font-black' : ''}`}
+                >
                   {cat}
                 </button>
               ))}
@@ -271,13 +374,33 @@ const Courses = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-0 border border-border-subtle">
-          {courses.map((course, i) => (
-            <div key={i} className="border-r border-border-subtle last:border-r-0">
-              <CourseCard course={course} />
+        <div className="grid md:grid-cols-3 gap-0 border border-border-subtle min-h-[400px]">
+          {filteredCourses.length > 0 ? (
+            filteredCourses.map((course, i) => (
+              <div key={i} className="border-r border-border-subtle last:border-r-0">
+                <CourseCard course={course} onFeedback={setSelectedCourse} />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-3 flex flex-col items-center justify-center p-32 text-center">
+              <div className="w-12 h-12 border border-brand-accent/20 flex items-center justify-center text-brand-muted mb-6">
+                <Search size={24} className="opacity-20" />
+              </div>
+              <h4 className="text-xl font-black uppercase tracking-tighter text-brand-text mb-2">No Modules Found</h4>
+              <p className="text-[10px] font-bold text-brand-muted/40 uppercase tracking-widest">Adjust your search parameters and try again.</p>
             </div>
-          ))}
+          )}
         </div>
+
+        <AnimatePresence>
+          {selectedCourse && (
+            <FeedbackModal 
+              isOpen={!!selectedCourse} 
+              onClose={() => setSelectedCourse(null)} 
+              courseTitle={selectedCourse} 
+            />
+          )}
+        </AnimatePresence>
 
         {/* Technical Core Section */}
         <div className="mt-32">
